@@ -2,6 +2,7 @@ package receipt
 
 import (
 	"errors"
+	"io"
 	"net/http"
 
 	"family/internal/response"
@@ -36,6 +37,39 @@ func (h Handler) Check(c fiber.Ctx) error {
 	return response.Success(c, r)
 }
 
+const maxImageSize = 8 << 20
+
+var imageTypes = map[string]bool{"image/jpeg": true, "image/png": true, "image/webp": true}
+
+func (h Handler) CheckImage(c fiber.Ctx) error {
+	header, err := c.FormFile("file")
+	if err != nil {
+		return response.BadRequest(c)
+	}
+	if header.Size > maxImageSize {
+		return response.Error(c, http.StatusRequestEntityTooLarge, ErrTooLarge)
+	}
+
+	f, err := header.Open()
+	if err != nil {
+		return response.BadRequest(c)
+	}
+	defer f.Close()
+	data, err := io.ReadAll(io.LimitReader(f, maxImageSize+1))
+	if err != nil || len(data) > maxImageSize {
+		return response.BadRequest(c)
+	}
+	if !imageTypes[http.DetectContentType(data)] {
+		return response.Error(c, http.StatusBadRequest, ErrInvalidInput)
+	}
+
+	r, err := h.service.CheckImage(c.RequestCtx(), header.Filename, data)
+	if err != nil {
+		return mapError(c, err)
+	}
+	return response.Success(c, r)
+}
+
 func (h Handler) Save(c fiber.Ctx) error {
 	var in SaveInput
 	if err := c.Bind().Body(&in); err != nil {
@@ -64,6 +98,8 @@ func mapError(c fiber.Ctx, err error) error {
 	switch {
 	case errors.Is(err, ErrInvalidInput):
 		return response.Error(c, http.StatusBadRequest, err)
+	case errors.Is(err, ErrTooLarge):
+		return response.Error(c, http.StatusRequestEntityTooLarge, err)
 	case errors.Is(err, ErrNotFound):
 		return response.Error(c, http.StatusNotFound, err)
 	case errors.Is(err, ErrDuplicate):

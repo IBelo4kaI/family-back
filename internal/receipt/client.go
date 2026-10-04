@@ -1,11 +1,13 @@
 package receipt
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -55,9 +57,38 @@ type apiResponse struct {
 	} `json:"data"`
 }
 
-// check запрашивает чек по строке из QR-кода. Пока сервис не отдал данные,
-// опрашивает его; при исчерпании лимита переключается на следующий токен.
+// check запрашивает чек по строке из QR-кода.
 func (c *checker) check(ctx context.Context, qrraw string) (map[string]any, error) {
+	return c.poll(ctx, func(token string) (apiResponse, error) {
+		return c.send(ctx, url.Values{"token": {token}, "qrraw": {qrraw}}.Encode(), "application/x-www-form-urlencoded")
+	})
+}
+
+// checkImage отдаёт сервису фото чека, QR он распознаёт сам.
+func (c *checker) checkImage(ctx context.Context, filename string, data []byte) (map[string]any, error) {
+	return c.poll(ctx, func(token string) (apiResponse, error) {
+		var body bytes.Buffer
+		w := multipart.NewWriter(&body)
+		if err := w.WriteField("token", token); err != nil {
+			return apiResponse{}, err
+		}
+		part, err := w.CreateFormFile("qrfile", filename)
+		if err != nil {
+			return apiResponse{}, err
+		}
+		if _, err := part.Write(data); err != nil {
+			return apiResponse{}, err
+		}
+		if err := w.Close(); err != nil {
+			return apiResponse{}, err
+		}
+		return c.send(ctx, body.String(), w.FormDataContentType())
+	})
+}
+
+// poll выполняет запрос, пока сервис не отдал данные; при исчерпании лимита
+// переключается на следующий токен.
+func (c *checker) poll(ctx context.Context, do func(token string) (apiResponse, error)) (map[string]any, error) {
 	if len(c.tokens) == 0 {
 		return nil, ErrNoToken
 	}
@@ -65,7 +96,7 @@ func (c *checker) check(ctx context.Context, qrraw string) (map[string]any, erro
 	limited := map[string]bool{}
 	for attempt := 1; ; {
 		token := c.pickToken()
-		res, err := c.request(ctx, token, qrraw)
+		res, err := do(token)
 		if err != nil {
 			return nil, err
 		}
@@ -93,13 +124,12 @@ func (c *checker) check(ctx context.Context, qrraw string) (map[string]any, erro
 	}
 }
 
-func (c *checker) request(ctx context.Context, token, qrraw string) (apiResponse, error) {
-	form := url.Values{"token": {token}, "qrraw": {qrraw}}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, checkURL, strings.NewReader(form.Encode()))
+func (c *checker) send(ctx context.Context, body, contentType string) (apiResponse, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, checkURL, strings.NewReader(body))
 	if err != nil {
 		return apiResponse{}, err
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Content-Type", contentType)
 
 	resp, err := c.client.Do(req)
 	if err != nil {

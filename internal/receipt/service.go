@@ -19,6 +19,7 @@ var (
 	ErrInvalidInput = errors.New("проверьте введённые данные")
 	ErrDuplicate    = errors.New("этот чек уже добавлен")
 	ErrNotFound     = errors.New("запись не найдена")
+	ErrTooLarge     = errors.New("файл слишком большой")
 )
 
 type Actor struct {
@@ -28,6 +29,7 @@ type Actor struct {
 
 type Service interface {
 	Check(ctx context.Context, qrraw string) (Receipt, error)
+	CheckImage(ctx context.Context, filename string, data []byte) (Receipt, error)
 	Save(ctx context.Context, a Actor, in SaveInput) (Transaction, error)
 	Items(ctx context.Context, a Actor, transactionID uuid.UUID) ([]StoredItem, error)
 }
@@ -47,6 +49,14 @@ func (s *service) Check(ctx context.Context, qrraw string) (Receipt, error) {
 		return Receipt{}, ErrInvalidInput
 	}
 	raw, err := s.checker.check(ctx, strings.TrimSpace(qrraw))
+	if err != nil {
+		return Receipt{}, err
+	}
+	return toReceipt(raw)
+}
+
+func (s *service) CheckImage(ctx context.Context, filename string, data []byte) (Receipt, error) {
+	raw, err := s.checker.checkImage(ctx, filename, data)
 	if err != nil {
 		return Receipt{}, err
 	}

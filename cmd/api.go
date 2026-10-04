@@ -31,7 +31,7 @@ type config struct {
 }
 
 func (app *application) mount() *fiber.App {
-	fiberApp := fiber.New()
+	fiberApp := fiber.New(fiber.Config{BodyLimit: 10 << 20})
 
 	fiberApp.Use(cors.New(cors.Config{
 		AllowOrigins: app.config.corsOrigins,
