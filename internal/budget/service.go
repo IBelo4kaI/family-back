@@ -463,9 +463,16 @@ func (s *service) TopUpGoal(ctx context.Context, a Actor, id uuid.UUID, amount i
 
 func validateGoal(in GoalInput) (repo.CreateGoalParams, error) {
 	name := strings.TrimSpace(in.Name)
-	deadline, err := parseDate(in.Deadline)
-	if err != nil || name == "" || in.Target <= 0 || in.Saved < 0 || !validScope(in.Scope) {
+	if name == "" || (in.Target != nil && *in.Target <= 0) || in.Saved < 0 || !validScope(in.Scope) {
 		return repo.CreateGoalParams{}, ErrInvalidInput
+	}
+	var deadline *time.Time
+	if in.Deadline != nil && *in.Deadline != "" {
+		d, err := parseDate(*in.Deadline)
+		if err != nil {
+			return repo.CreateGoalParams{}, ErrInvalidInput
+		}
+		deadline = &d
 	}
 	return repo.CreateGoalParams{Name: name, Target: in.Target, Saved: in.Saved, Deadline: deadline, Scope: in.Scope}, nil
 }

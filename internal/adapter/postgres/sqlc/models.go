@@ -90,14 +90,14 @@ type RefreshToken struct {
 }
 
 type SavingsGoal struct {
-	ID       uuid.UUID `json:"id"`
-	FamilyID uuid.UUID `json:"familyId"`
-	UserID   uuid.UUID `json:"userId"`
-	Name     string    `json:"name"`
-	Target   int64     `json:"target"`
-	Saved    int64     `json:"saved"`
-	Deadline time.Time `json:"deadline"`
-	Scope    string    `json:"scope"`
+	ID       uuid.UUID  `json:"id"`
+	FamilyID uuid.UUID  `json:"familyId"`
+	UserID   uuid.UUID  `json:"userId"`
+	Name     string     `json:"name"`
+	Target   *int64     `json:"target"`
+	Saved    int64      `json:"saved"`
+	Deadline *time.Time `json:"deadline"`
+	Scope    string     `json:"scope"`
 }
 
 type Transaction struct {

@@ -101,18 +101,18 @@ type LimitInput struct {
 type SavingsGoal struct {
 	ID       uuid.UUID `json:"id"`
 	Name     string    `json:"name"`
-	Target   int64     `json:"target"`
+	Target   *int64    `json:"target"`
 	Saved    int64     `json:"saved"`
-	Deadline string    `json:"deadline"`
+	Deadline *string   `json:"deadline"`
 	Scope    string    `json:"scope"`
 }
 
 type GoalInput struct {
 	Name     string `json:"name"`
-	Target   int64  `json:"target"`
-	Saved    int64  `json:"saved"`
-	Deadline string `json:"deadline"`
-	Scope    string `json:"scope"`
+	Target   *int64  `json:"target"`
+	Saved    int64   `json:"saved"`
+	Deadline *string `json:"deadline"`
+	Scope    string  `json:"scope"`
 }
 
 type TopUpRequest struct {
@@ -177,7 +177,7 @@ func toLimit(l repo.CategoryLimit) CategoryLimit {
 func toGoal(g repo.SavingsGoal) SavingsGoal {
 	return SavingsGoal{
 		ID: g.ID, Name: g.Name, Target: g.Target, Saved: g.Saved,
-		Deadline: fmtDate(g.Deadline), Scope: g.Scope,
+		Deadline: fmtDatePtr(g.Deadline), Scope: g.Scope,
 	}
 }
 

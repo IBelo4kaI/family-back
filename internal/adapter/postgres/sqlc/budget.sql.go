@@ -104,13 +104,13 @@ RETURNING id, family_id, user_id, name, target, saved, deadline, scope
 `
 
 type CreateGoalParams struct {
-	Name     string    `json:"name"`
-	Target   int64     `json:"target"`
-	Saved    int64     `json:"saved"`
-	Deadline time.Time `json:"deadline"`
-	Scope    string    `json:"scope"`
-	FamilyID uuid.UUID `json:"familyId"`
-	UserID   uuid.UUID `json:"userId"`
+	Name     string     `json:"name"`
+	Target   *int64     `json:"target"`
+	Saved    int64      `json:"saved"`
+	Deadline *time.Time `json:"deadline"`
+	Scope    string     `json:"scope"`
+	FamilyID uuid.UUID  `json:"familyId"`
+	UserID   uuid.UUID  `json:"userId"`
 }
 
 func (q *Queries) CreateGoal(ctx context.Context, arg CreateGoalParams) (SavingsGoal, error) {
@@ -769,14 +769,14 @@ RETURNING id, family_id, user_id, name, target, saved, deadline, scope
 `
 
 type UpdateGoalParams struct {
-	Name     string    `json:"name"`
-	Target   int64     `json:"target"`
-	Saved    int64     `json:"saved"`
-	Deadline time.Time `json:"deadline"`
-	Scope    string    `json:"scope"`
-	ID       uuid.UUID `json:"id"`
-	FamilyID uuid.UUID `json:"familyId"`
-	UserID   uuid.UUID `json:"userId"`
+	Name     string     `json:"name"`
+	Target   *int64     `json:"target"`
+	Saved    int64      `json:"saved"`
+	Deadline *time.Time `json:"deadline"`
+	Scope    string     `json:"scope"`
+	ID       uuid.UUID  `json:"id"`
+	FamilyID uuid.UUID  `json:"familyId"`
+	UserID   uuid.UUID  `json:"userId"`
 }
 
 func (q *Queries) UpdateGoal(ctx context.Context, arg UpdateGoalParams) (SavingsGoal, error) {
