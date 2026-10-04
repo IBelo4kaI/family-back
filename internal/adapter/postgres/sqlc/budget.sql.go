@@ -97,6 +97,35 @@ func (q *Queries) CreateCard(ctx context.Context, arg CreateCardParams) (CreditC
 	return i, err
 }
 
+const createCategory = `-- name: CreateCategory :one
+INSERT INTO categories (id, family_id, name, kind) VALUES ($1, $2, $3, $4) RETURNING id, name, kind
+`
+
+type CreateCategoryParams struct {
+	ID       string      `json:"id"`
+	FamilyID pgtype.UUID `json:"familyId"`
+	Name     string      `json:"name"`
+	Kind     string      `json:"kind"`
+}
+
+type CreateCategoryRow struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Kind string `json:"kind"`
+}
+
+func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) (CreateCategoryRow, error) {
+	row := q.db.QueryRow(ctx, createCategory,
+		arg.ID,
+		arg.FamilyID,
+		arg.Name,
+		arg.Kind,
+	)
+	var i CreateCategoryRow
+	err := row.Scan(&i.ID, &i.Name, &i.Kind)
+	return i, err
+}
+
 const createGoal = `-- name: CreateGoal :one
 INSERT INTO savings_goals (family_id, user_id, name, target, saved, deadline, scope)
 VALUES ($6, $7, $1, $2, $3, $4, $5)

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	repo "family/internal/adapter/postgres/sqlc"
 
@@ -23,6 +24,8 @@ var (
 )
 
 const (
+	maxCategoryName = 40
+
 	actionConfirm = "confirm"
 	actionSkip    = "skip"
 )
@@ -35,6 +38,8 @@ type Actor struct {
 
 type Service interface {
 	Load(ctx context.Context, a Actor) (Data, error)
+
+	CreateCategory(ctx context.Context, a Actor, in CategoryInput) (Category, error)
 
 	CreateTransaction(ctx context.Context, a Actor, in TransactionInput) (Transaction, error)
 	UpdateTransaction(ctx context.Context, a Actor, id uuid.UUID, in TransactionInput) (Transaction, error)
@@ -373,6 +378,30 @@ func (s *service) settle(
 }
 
 // --- Лимиты ---
+
+// CreateCategory идемпотентна по имени: совпадение без учёта регистра возвращает существующую категорию.
+func (s *service) CreateCategory(ctx context.Context, a Actor, in CategoryInput) (Category, error) {
+	name := strings.Join(strings.Fields(in.Name), " ")
+	if name == "" || utf8.RuneCountInString(name) > maxCategoryName || (in.Kind != "income" && in.Kind != "expense") {
+		return Category{}, ErrInvalidInput
+	}
+	existing, err := s.repo.ListCategories(ctx, pgtype.UUID{Bytes: a.FamilyID, Valid: true})
+	if err != nil {
+		return Category{}, err
+	}
+	for _, c := range existing {
+		if c.Kind == in.Kind && strings.EqualFold(c.Name, name) {
+			return Category(c), nil
+		}
+	}
+	row, err := s.repo.CreateCategory(ctx, repo.CreateCategoryParams{
+		ID: uuid.NewString(), FamilyID: pgtype.UUID{Bytes: a.FamilyID, Valid: true}, Name: name, Kind: in.Kind,
+	})
+	if err != nil {
+		return Category{}, mapDBError(err)
+	}
+	return Category(row), nil
+}
 
 func (s *service) CreateLimit(ctx context.Context, a Actor, in LimitInput) (CategoryLimit, error) {
 	if err := s.validateLimit(ctx, a, in); err != nil {

@@ -16,6 +16,11 @@ type Category struct {
 	Kind string `json:"kind"`
 }
 
+type CategoryInput struct {
+	Name string `json:"name"`
+	Kind string `json:"kind"`
+}
+
 type Transaction struct {
 	ID         uuid.UUID `json:"id"`
 	Amount     int64     `json:"amount"`
@@ -108,7 +113,7 @@ type SavingsGoal struct {
 }
 
 type GoalInput struct {
-	Name     string `json:"name"`
+	Name     string  `json:"name"`
 	Target   *int64  `json:"target"`
 	Saved    int64   `json:"saved"`
 	Deadline *string `json:"deadline"`

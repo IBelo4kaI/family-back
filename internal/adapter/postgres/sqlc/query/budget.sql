@@ -1,6 +1,9 @@
 -- name: ListCategories :many
 SELECT id, name, kind FROM categories WHERE family_id IS NULL OR family_id = $1 ORDER BY family_id NULLS FIRST, name;
 
+-- name: CreateCategory :one
+INSERT INTO categories (id, family_id, name, kind) VALUES ($1, $2, $3, $4) RETURNING id, name, kind;
+
 -- name: GetCategory :one
 SELECT id, name, kind FROM categories WHERE id = $1 AND (family_id IS NULL OR family_id = $2);
 

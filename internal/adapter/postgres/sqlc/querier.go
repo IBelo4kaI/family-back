@@ -17,6 +17,7 @@ type Querier interface {
 	ClosePayment(ctx context.Context, arg ClosePaymentParams) (int64, error)
 	ConsumeRefreshToken(ctx context.Context, tokenHash string) (uuid.UUID, error)
 	CreateCard(ctx context.Context, arg CreateCardParams) (CreditCard, error)
+	CreateCategory(ctx context.Context, arg CreateCategoryParams) (CreateCategoryRow, error)
 	CreateFamily(ctx context.Context, name string) (Family, error)
 	CreateGoal(ctx context.Context, arg CreateGoalParams) (SavingsGoal, error)
 	CreateInvite(ctx context.Context, arg CreateInviteParams) error

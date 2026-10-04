@@ -8,6 +8,8 @@ func SetupRoutes(router fiber.Router, service Service, authMW fiber.Handler) {
 
 	g.Get("/", h.Load)
 
+	g.Post("/categories", create(h, service.CreateCategory))
+
 	g.Post("/transactions", create(h, service.CreateTransaction))
 	g.Put("/transactions/:id", update(h, service.UpdateTransaction))
 	g.Delete("/transactions/:id", remove(service.DeleteTransaction))
